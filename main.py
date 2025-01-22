@@ -48,13 +48,14 @@ async def try_subscribe(clientm: matrix.Matrix):
     cursor = db.execute("SELECT * FROM tablemap WHERE `prepare_finished` = 0")
     for row in cursor:
         try:
-            await client(JoinChannelRequest(row[2]))
+            ent = await client.get_entity(row[2])
+            await client(JoinChannelRequest(ent))
         except:
             await clientm.send_message(row[3], traceback.format_exc() + "\nCant subscribe this channel.")
             await clientm.client.room_leave(row[3])
             db.execute("DELECT FROM tablemap WHERE `id` = ?", [row[0]])
             continue
-        db.execute("UPDATE tablemap set `prepare_finished` = 1 WHERE `id` = ?", [row[0]])
+        db.execute("UPDATE tablemap set `prepare_finished` = 1, `targetid` = ? WHERE `id` = ?", [ent.id,row[0]])
         await clientm.send_message(row[3], "subscribed. now listener is waiting for message!")
 
 
